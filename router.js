@@ -1,0 +1,50 @@
+export const API_EndPoint = async function (HttpContext) {
+    if (!HttpContext.path.isAPI) {
+        return false;
+    } else {
+        let controllerName = HttpContext.path.controllerName;
+        if (controllerName != undefined) {
+            try {
+                const { default: Controller } = (await import('./controllers/' + controllerName + '.js'));
+
+                let controller = new Controller(HttpContext);
+                switch (HttpContext.req.method) {
+                    case 'GET':
+                        console.log("yes");
+                        controller.get(HttpContext.path.id);
+                        console.log("Trying to hit the API: ", HttpContext.path);
+
+
+                        return true;
+                    case 'POST':
+                        if (HttpContext.payload)
+                            controller.post(HttpContext.payload);
+                        else
+                            HttpContext.response.unsupported();
+                        return true;
+                    case 'PUT':
+                        if (HttpContext.payload)
+                            controller.put(HttpContext.payload);
+                        else
+                            HttpContext.response.unsupported();
+                            return true;
+                    case 'DELETE':
+                        controller.remove(HttpContext.path.id);
+                        return true;
+                    default:
+                        HttpContext.response.notImplemented();
+                        return true;
+                }
+            } catch (error) {
+                console.log("API_EndPoint Error message: \n", error.message);
+                console.log("Stack: \n", error.stack);
+                HttpContext.response.notFound();
+                return true;
+            }
+        } else {
+            // not an API endpoint
+            // must be handled by another middleware
+            return false;
+        }
+    }
+}
